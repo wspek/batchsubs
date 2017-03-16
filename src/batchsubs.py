@@ -2,9 +2,6 @@
  Created by waldo on 3/15/17
 """
 
-__author__ = "waldo"
-__project__ = "batchsubs"
-
 import sys
 import argparse
 import base64
@@ -14,7 +11,10 @@ from os import listdir
 from pythonopensubtitles.opensubtitles import OpenSubtitles
 from pythonopensubtitles.utils import File
 
-logger = util.get_logger("batchsubs", "../logs/{0}.log".format("batchsubs"))
+__author__ = "waldo"
+__project__ = "batchsubs"
+
+LOG_LOCATION = "../logs/{0}.log".format("batchsubs")
 
 
 class CommandLineTool(object):
@@ -77,7 +77,7 @@ class BatchSubsTool(CommandLineTool):
             "required": True,
             "type": str,
             "default": None,
-            "help": "username of the OpenSubtitles.org account used to retrieve.",
+            "help": "opensubtitles.org username",
             "metavar": "USERNAME"
         },
         {
@@ -85,7 +85,7 @@ class BatchSubsTool(CommandLineTool):
             "required": True,
             "type": str,
             "default": None,
-            "help": "password of the  OpenSubtitles.org account used to retrieve.",
+            "help": "opensubtitles.org password",
             "metavar": "PASSWORD"
         },
         {
@@ -101,7 +101,7 @@ class BatchSubsTool(CommandLineTool):
             "required": True,
             "type": str,
             "default": None,
-            "help": "format of files for which to download subtitles",
+            "help": "file extension for which to download subtitles",
             "choices": ["mkv", "avi"]
         },
         {
@@ -157,16 +157,16 @@ class BatchSubs(object):
             file_hash = video_file.get_hash()
             file_size = video_file.size
 
-            logger.info("Processing file '{0}' - hash: {1} - size: {2}".format(file_name, file_hash, file_size))
+            self.logger.info("Processing file '{0}' - hash: {1} - size: {2}".format(file_name, file_hash, file_size))
 
-            logger.debug("Creating list of corresponding subtitles.")
+            self.logger.debug("Creating list of corresponding subtitles.")
             subtitles = self.opensubs.search_subtitles(
                 [{'sublanguageid': language, 'moviehash': file_hash, 'moviebytesize': file_size}])
-            logger.debug("Cleaning up subtitles to contain only interesting data.")
+            self.logger.debug("Cleaning up subtitles to contain only interesting data.")
             subtitles_clean = self._clean_up(subtitles)
 
             # Download the subtitles of our choice
-            logger.debug("Getting {0}st choice subtitles.".format(choice))
+            self.logger.debug("Getting {0}st choice subtitles.".format(choice))
             subtitle = self._get_choice(subtitles_clean, self.choice)
             save_path = u"{0}/S{1}E{2}_{3}_{4}_{5}_{6}_ID-{7}.srt".format(folder,
                                                                           subtitle["SeriesSeason"],
@@ -178,12 +178,12 @@ class BatchSubs(object):
                                                                           subtitle["IDSubtitleFile"])
             download_list[subtitle["IDSubtitleFile"]] = save_path
 
-        logger.info("Downloading and saving all {0}st choice subtitles.".format(choice))
+        self.logger.info("Downloading and saving all {0}st choice subtitles.".format(choice))
 
         self._download_subtitles(download_list)
 
-        logger.info("Subtitles saved in folder '{0}'.".format(folder))
-        logger.info("Logging out.")
+        self.logger.info("Subtitles saved in folder '{0}'.".format(folder))
+        self.logger.info("Logging out.")
 
         self.opensubs.logout()
 
