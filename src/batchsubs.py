@@ -245,6 +245,9 @@ class BatchSubs(object):
 
 
 class OpenSubtitlesExtended(OpenSubtitles):
+    def __init__(self):
+        self.data = None
+
     def _get_from_data(self, key):
         return self.data.get(key)
 
@@ -255,35 +258,6 @@ class OpenSubtitlesExtended(OpenSubtitles):
     def download_subtitles(self, params):
         self.data = self.xmlrpc.DownloadSubtitles(self.token, params)
         return self._get_from_data('data')
-
-
-def test():
-    username = "batchsubs"
-    password = "subsbatch"
-
-    name = "Breaking Bad"
-    path = "/media/waldo/DATA-SHARE/Downloads/Breaking Bad Season 2 Complete 720p.BRrip.Sujaidr/"
-    video = "Breaking Bad s02ep1 720p brrip.sujaidr.mkv"
-    subtitle = video[:-4] + ".srt"
-
-    # Login
-    ose = OpenSubtitlesExtended()
-    token = ose.login(username, password)
-
-    f = File("".join((path, video)))
-    hash = f.get_hash()
-    size = f.size
-
-    data = ose.get_languages()
-
-    # data = ose.search_subtitles([{'sublanguageid': 'all', 'moviehash': hash}])
-    data = ose.search_subtitles([{'sublanguageid': 'spa', 'moviehash': hash, 'moviebytesize': size}])
-
-    ID = data[0]['IDSubtitleFile']
-    subtitle = ose.download_subtitles([ID])
-    pass
-
-    ose.logout()
 
 
 def main():
