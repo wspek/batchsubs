@@ -145,12 +145,13 @@ class BatchSubs(object):
     def __init__(self):
         self.logger = util.get_logger(__name__, LOG_LOCATION)
         self.choice = 1
+        self.token = ""
         self.opensubs = OpenSubtitlesExtended()
 
     def login(self, username, password):
         self.logger.info("Logging into OpenSubtitles.org and requesting token.")
 
-        self.opensubs.login(username, password)
+        self.token = self.opensubs.login(username, password)
 
         self.logger.debug("Token acquired.")
 
@@ -165,7 +166,6 @@ class BatchSubs(object):
         self.logger.debug("Creating list of '{0}' files in folder '{1}'.".format(video_format, folder))
         file_list = [file_name for file_name in listdir(folder) if file_name.split('.')[-1] == video_format]
 
-        # For each file in the list download the subtitle file
         download_list = {}
         for file_name in file_list:
             video_file = File("/".join((folder, file_name)))
@@ -173,15 +173,17 @@ class BatchSubs(object):
             file_size = video_file.size
 
             self.logger.info("Processing file '{0}' - hash: {1} - size: {2}".format(file_name, file_hash, file_size))
-
             self.logger.debug("Creating list of corresponding subtitles.")
+
             subtitles = self.opensubs.search_subtitles(
                 [{'sublanguageid': language, 'moviehash': file_hash, 'moviebytesize': file_size}])
+
             self.logger.debug("Cleaning up subtitles to contain only interesting data.")
+
             subtitles_clean = self._clean_up(subtitles)
 
-            # Download the subtitles of our choice
             self.logger.debug("Getting {0}st choice subtitles.".format(choice))
+
             subtitle = self._get_choice(subtitles_clean, self.choice)
             save_path = u"{0}/S{1}E{2}_{3}_{4}_{5}_{6}_ID-{7}.srt".format(folder,
                                                                           subtitle["SeriesSeason"],
@@ -193,17 +195,17 @@ class BatchSubs(object):
                                                                           subtitle["IDSubtitleFile"])
             download_list[subtitle["IDSubtitleFile"]] = save_path
 
-        self.logger.info("Downloading and saving all {0}st choice subtitles.".format(choice))
+        self.logger.info("Downloading and saving all #{0} choice subtitles.".format(choice))
 
         self._download_subtitles(download_list)
 
         self.logger.info("Subtitles saved in folder '{0}'.".format(folder))
 
     def _download_subtitles(self, download_list):
-        id_list = download_list.keys()
-        subtitle_list = self.opensubs.download_subtitles(id_list)
+        file_ids = download_list.keys()
+        subtitles = self.opensubs.download_subtitles(file_ids)
 
-        for subtitle in subtitle_list:
+        for subtitle in subtitles:
             subtitle_id = subtitle["idsubtitlefile"]
             subtitle_decompressed = self._decode_unzip(subtitle["data"])
 
@@ -211,30 +213,30 @@ class BatchSubs(object):
             with open(file_name, 'w') as sub_file:
                 sub_file.write(subtitle_decompressed)
 
-    def _get_choice(self, subtitle_list, number):
+    def _get_choice(self, subtitle_list, choice_nr):
         # Sort the dictionary according to number of downloads (descending)
-        newlist = sorted(subtitle_list, key=lambda k: int(k['SubDownloadsCnt']), reverse=True)
+        sorted_list = sorted(subtitle_list, key=lambda k: int(k['SubDownloadsCnt']), reverse=True)
 
         # Get the requested choice, or the last element if out of bounds
         try:
-            sub_choice = newlist[number - 1]
+            sub_of_choice = sorted_list[choice_nr - 1]
         except IndexError:
-            self.choice = len(newlist)
-            sub_choice = newlist[-1]
+            self.choice = len(sorted_list)
+            sub_of_choice = sorted_list[-1]
 
-        return sub_choice
+        return sub_of_choice
 
     @staticmethod
-    def _clean_up(subtitle_list):
-        interesting_data = ["SubComments", "SubFileName", "SubBad", "SubLanguageID", "SeriesEpisode",
-                            "SubEncoding", "SubDownloadsCnt", "SeriesSeason", "IDSubtitle", "IDSubtitleFile"]
-        subtitle_list_clean = []
+    def _clean_up(subtitles):
+        fields_of_interest = ["SubComments", "SubFileName", "SubBad", "SubLanguageID", "SeriesEpisode",
+                              "SubEncoding", "SubDownloadsCnt", "SeriesSeason", "IDSubtitle", "IDSubtitleFile"]
 
-        for elem in subtitle_list:
-            clean_elem = {k: elem.get(k, None) for k in interesting_data}
-            subtitle_list_clean.append(clean_elem)
+        clean_list = []
+        for subtitle in subtitles:
+            clean_elem = {field: subtitle.get(field, None) for field in fields_of_interest}
+            clean_list.append(clean_elem)
 
-        return subtitle_list_clean
+        return clean_list
 
     @staticmethod
     def _decode_unzip(subtitle_base64_zipped):
