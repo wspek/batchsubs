@@ -123,31 +123,46 @@ class BatchSubsTool(CommandLineTool):
     ]
 
     def actual_command(self):
-        arguments = {
+        credentials = {
             "username": self.vargs['u'],
             "password": self.vargs['p'],
+        }
+
+        arguments = {
             "folder": self.vargs['i'],
             "video_format": self.vargs['f'],
             "language": self.vargs['l'],
             "choice": self.vargs['c'],
         }
 
-        BatchSubs().download_subs_in_folder(**arguments)
+        batchsubs = BatchSubs()
+        batchsubs.login(**credentials)
+        batchsubs.download_subs_in_folder(**arguments)
+        batchsubs.logout()
 
 
 class BatchSubs(object):
     def __init__(self):
-        self.opensubs = OpenSubtitlesExtended()
+        self.logger = util.get_logger(__name__, LOG_LOCATION)
         self.choice = 1
+        self.opensubs = OpenSubtitlesExtended()
 
-    def download_subs_in_folder(self, username, password, folder, video_format, language, choice):
+    def login(self, username, password):
+        self.logger.info("Logging into OpenSubtitles.org and requesting token.")
+
+        self.opensubs.login(username, password)
+
+        self.logger.debug("Token acquired.")
+
+    def logout(self):
+        self.logger.info("Logging out.")
+
+        self.opensubs.logout()
+
+    def download_subs_in_folder(self, folder, video_format, language, choice):
         self.choice = choice
 
-        logger.info("Logging into OpenSubtitles.org and requesting token.")
-        self.opensubs.login(username, password)
-        logger.debug("Token acquired.")
-
-        logger.debug("Creating list of '{0}' files in folder '{1}'.".format(video_format, folder))
+        self.logger.debug("Creating list of '{0}' files in folder '{1}'.".format(video_format, folder))
         file_list = [file_name for file_name in listdir(folder) if file_name.split('.')[-1] == video_format]
 
         # For each file in the list download the subtitle file
@@ -183,9 +198,6 @@ class BatchSubs(object):
         self._download_subtitles(download_list)
 
         self.logger.info("Subtitles saved in folder '{0}'.".format(folder))
-        self.logger.info("Logging out.")
-
-        self.opensubs.logout()
 
     def _download_subtitles(self, download_list):
         id_list = download_list.keys()
@@ -198,17 +210,6 @@ class BatchSubs(object):
             file_name = download_list[subtitle_id]
             with open(file_name, 'w') as sub_file:
                 sub_file.write(subtitle_decompressed)
-
-    def _clean_up(self, subtitle_list):
-        interesting_data = ["SubComments", "SubFileName", "SubBad", "SubLanguageID", "SeriesEpisode",
-                            "SubEncoding", "SubDownloadsCnt", "SeriesSeason", "IDSubtitle", "IDSubtitleFile"]
-        subtitle_list_clean = []
-
-        for elem in subtitle_list:
-            clean_elem = {k: elem.get(k, None) for k in interesting_data}
-            subtitle_list_clean.append(clean_elem)
-
-        return subtitle_list_clean
 
     def _get_choice(self, subtitle_list, number):
         # Sort the dictionary according to number of downloads (descending)
@@ -223,7 +224,20 @@ class BatchSubs(object):
 
         return sub_choice
 
-    def _decode_unzip(self, subtitle_base64_zipped):
+    @staticmethod
+    def _clean_up(subtitle_list):
+        interesting_data = ["SubComments", "SubFileName", "SubBad", "SubLanguageID", "SeriesEpisode",
+                            "SubEncoding", "SubDownloadsCnt", "SeriesSeason", "IDSubtitle", "IDSubtitleFile"]
+        subtitle_list_clean = []
+
+        for elem in subtitle_list:
+            clean_elem = {k: elem.get(k, None) for k in interesting_data}
+            subtitle_list_clean.append(clean_elem)
+
+        return subtitle_list_clean
+
+    @staticmethod
+    def _decode_unzip(subtitle_base64_zipped):
         subtitle_gzip = base64.b64decode(subtitle_base64_zipped)
         return zlib.decompress(subtitle_gzip, 16 + zlib.MAX_WBITS)
 
