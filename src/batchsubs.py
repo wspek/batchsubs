@@ -259,6 +259,54 @@ class OpenSubtitlesExtended(OpenSubtitles):
         self.data = self.xmlrpc.DownloadSubtitles(self.token, params)
         return self._get_from_data('data')
 
+    def report_wrong_movie_hash(self):
+        pass
+
+    def insert_movie_hash(self):
+        pass
+
+    def get_subtitle_languages(self):
+        pass
+
+    def get_translation(self):
+        pass
+
+    def search_to_mail(self):
+        pass
+
+    def insert_movie(self):
+        pass
+
+    def get_available_translations(self):
+        pass
+
+    def check_subtitle_hash(self):
+        pass
+
+    def get_imdb_movie_details(self):
+        pass
+
+    def check_movie_hash(self):
+        pass
+
+    def add_request(self):
+        pass
+
+    def add_comment(self):
+        pass
+
+    def check_movie_hash_2(self):
+        pass
+
+    def get_comments(self):
+        pass
+
+    def subtitles_vote(self):
+        pass
+
+    def detect_language(self):
+        pass
+
 
 def main():
     BatchSubsTool().run()
