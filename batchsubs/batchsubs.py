@@ -14,7 +14,7 @@ from pythonopensubtitles.utils import File
 __author__ = "waldo"
 __project__ = "batchsubs"
 
-LOG_LOCATION = "../logs/{0}.log".format("batchsubs")
+# LOG_LOCATION = "var/log/{0}.log".format("batchsubs")
 
 
 class CommandLineTool(object):
@@ -143,7 +143,7 @@ class BatchSubsTool(CommandLineTool):
 
 class BatchSubs(object):
     def __init__(self):
-        self.logger = util.get_logger(__name__, LOG_LOCATION)
+        self.logger = util.get_logger(__name__)
         self.choice = 1
         self.token = ""
         self.opensubs = OpenSubtitlesExtended()
@@ -178,6 +178,7 @@ class BatchSubs(object):
             subtitles = self.opensubs.search_subtitles(
                 [{'sublanguageid': language, 'moviehash': file_hash, 'moviebytesize': file_size}])
 
+            self.logger.debug("{0} subtitles found for this title.".format(len(subtitles)))
             self.logger.debug("Cleaning up subtitles to contain only interesting data.")
 
             subtitles_clean = self._clean_up(subtitles)
