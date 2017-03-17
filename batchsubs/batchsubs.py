@@ -246,6 +246,7 @@ class BatchSubs(object):
 
 class OpenSubtitlesExtended(OpenSubtitles):
     def __init__(self):
+        super(OpenSubtitlesExtended, self).__init__()
         self.data = None
 
     def _get_from_data(self, key):
@@ -259,6 +260,7 @@ class OpenSubtitlesExtended(OpenSubtitles):
         self.data = self.xmlrpc.DownloadSubtitles(self.token, params)
         return self._get_from_data('data')
 
+    # Not implemented functions
     def report_wrong_movie_hash(self):
         pass
 
