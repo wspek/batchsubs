@@ -1,0 +1,9 @@
+setup.py
+batchsubs/__init__.py
+batchsubs/batchsubs.py
+batchsubs/util.py
+batchsubs.egg-info/PKG-INFO
+batchsubs.egg-info/SOURCES.txt
+batchsubs.egg-info/dependency_links.txt
+batchsubs.egg-info/not-zip-safe
+batchsubs.egg-info/top_level.txt
