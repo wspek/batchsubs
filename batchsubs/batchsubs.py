@@ -14,6 +14,7 @@ from pythonopensubtitles.utils import File
 __author__ = "waldo"
 __project__ = "batchsubs"
 
+
 # LOG_LOCATION = "var/log/{0}.log".format("batchsubs")
 
 
@@ -144,7 +145,6 @@ class BatchSubsTool(CommandLineTool):
 class BatchSubs(object):
     def __init__(self):
         self.logger = util.get_logger(__name__)
-        self.choice = 1
         self.token = ""
         self.opensubs = OpenSubtitlesExtended()
 
@@ -161,8 +161,6 @@ class BatchSubs(object):
         self.opensubs.logout()
 
     def download_subs_in_folder(self, folder, video_format, language, choice):
-        self.choice = choice
-
         self.logger.debug("Creating list of '{0}' files in folder '{1}'.".format(video_format, folder))
         file_list = [file_name for file_name in listdir(folder) if file_name.split('.')[-1] == video_format]
 
@@ -183,17 +181,17 @@ class BatchSubs(object):
 
             subtitles_clean = self._clean_up(subtitles)
 
-            self.logger.debug("Getting {0}st choice subtitles.".format(choice))
+            self.logger.debug("Getting #{0} choice subtitles.".format(choice))
 
-            subtitle = self._get_choice(subtitles_clean, self.choice)
-            save_path = u"{0}/S{1}E{2}_{3}_{4}_{5}_{6}_ID-{7}.srt".format(folder,
-                                                                          subtitle["SeriesSeason"],
-                                                                          subtitle["SeriesEpisode"],
-                                                                          self.choice,
-                                                                          subtitle["SubLanguageID"],
-                                                                          subtitle["SubFileName"],
-                                                                          subtitle["SubEncoding"],
-                                                                          subtitle["IDSubtitleFile"])
+            chosen, subtitle = self._get_choice(subtitles_clean, choice)
+            save_path = u"{0}/S{1}E{2}_#{3}_{4}_{5}_{6}_ID-{7}.srt".format(folder,
+                                                                           subtitle["SeriesSeason"],
+                                                                           subtitle["SeriesEpisode"],
+                                                                           chosen,
+                                                                           subtitle["SubLanguageID"],
+                                                                           subtitle["SubFileName"],
+                                                                           subtitle["SubEncoding"],
+                                                                           subtitle["IDSubtitleFile"])
             download_list[subtitle["IDSubtitleFile"]] = save_path
 
         self.logger.info("Downloading and saving all #{0} choice subtitles.".format(choice))
@@ -215,6 +213,8 @@ class BatchSubs(object):
                 sub_file.write(subtitle_decompressed)
 
     def _get_choice(self, subtitle_list, choice_nr):
+        chosen = choice_nr
+
         # Sort the dictionary according to number of downloads (descending)
         sorted_list = sorted(subtitle_list, key=lambda k: int(k['SubDownloadsCnt']), reverse=True)
 
@@ -222,10 +222,10 @@ class BatchSubs(object):
         try:
             sub_of_choice = sorted_list[choice_nr - 1]
         except IndexError:
-            self.choice = len(sorted_list)
+            chosen = len(sorted_list)
             sub_of_choice = sorted_list[-1]
 
-        return sub_of_choice
+        return chosen, sub_of_choice
 
     @staticmethod
     def _clean_up(subtitles):
